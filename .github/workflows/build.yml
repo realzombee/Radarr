@@ -82,13 +82,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build_linux_musl_x64
-          path: _artifacts/linux-musl-x64/${{ env.FRAMEWORK }}/Radarr/**/*
+          path: _artifacts/linux-musl-x64/${{ env.FRAMEWORK }}/Radarr
 
       - name: Publish Linux Musl arm64 Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: build_linux_musl_arm64
-          path: _artifacts/linux-musl-arm64/${{ env.FRAMEWORK }}/Radarr/**/*
+          path: _artifacts/linux-musl-arm64/${{ env.FRAMEWORK }}/Radarr
 
   unit_test:
     needs: build
@@ -215,7 +215,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p ./bin
-          cp -r ./_output/linux-musl-x64/${{ env.FRAMEWORK }}/Radarr/. ./bin/
+          cp -r ./_output/Radarr/. ./bin/
 
       - name: Make Test Binaries Executable
         shell: bash
@@ -287,7 +287,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p ./bin
-          cp -r ./_output/linux-musl-x64/${{ env.FRAMEWORK }}/Radarr/. ./bin/
+          cp -r ./_output/Radarr/. ./bin/
 
       - name: Make Test Binaries Executable
         shell: bash
@@ -338,7 +338,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p ./bin
-          cp -r ./_output/linux-musl-x64/${{ env.FRAMEWORK }}/Radarr/. ./bin/
+          cp -r ./_output/Radarr/. ./bin/
 
       - name: Make Test Binaries Executable
         shell: bash
@@ -385,22 +385,22 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build_linux_musl_x64
-          path: _artifacts
+          path: _artifacts/linux-musl-x64
 
       - name: Download Build Artifact (arm64)
         uses: actions/download-artifact@v4
         with:
           name: build_linux_musl_arm64
-          path: _artifacts
+          path: _artifacts/linux-musl-arm64
 
       - name: Create Release Package
         shell: bash
         run: |
           mkdir -p _artifacts
           tar -czf _artifacts/Radarr.${{ needs.build.outputs.branch }}.${{ needs.build.outputs.version }}.linux-musl-core-x64.tar.gz \\
-            -C _artifacts/linux-musl-x64/${{ env.FRAMEWORK }} Radarr
+            -C _artifacts/linux-musl-x64 Radarr
           tar -czf _artifacts/Radarr.${{ needs.build.outputs.branch }}.${{ needs.build.outputs.version }}.linux-musl-core-arm64.tar.gz \\
-            -C _artifacts/linux-musl-arm64/${{ env.FRAMEWORK }} Radarr
+            -C _artifacts/linux-musl-arm64 Radarr
 
       - name: Upload Release Artifact
         uses: actions/upload-artifact@v4
