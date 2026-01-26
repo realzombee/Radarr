@@ -94,6 +94,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -150,6 +153,9 @@ jobs:
       Radarr__Postgres__User: radarr
       Radarr__Postgres__Password: radarr
     steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -185,6 +191,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -254,6 +263,9 @@ jobs:
       Radarr__Postgres__User: radarr
       Radarr__Postgres__Password: radarr
     steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -302,6 +314,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
