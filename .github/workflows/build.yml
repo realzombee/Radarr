@@ -64,42 +64,22 @@ jobs:
           echo "version=$RADARR_VERSION" >> "$GITHUB_OUTPUT"
           echo "branch=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
 
-      - name: Build Backend + Frontend + Packages (linux-x64)
+      - name: Build Backend + Frontend
         shell: bash
-        run: ./build.sh --backend --frontend --packages -f ${{ env.FRAMEWORK }} -r linux-x64
+        run: ./build.sh --backend --frontend --packages
 
-      - name: Publish Linux x64 Test Artifact
+      - name: Publish linux-x64 Test Artifact
         uses: actions/upload-artifact@v4
         with:
           name: tests-linux-x64
           path: _tests/${{ env.FRAMEWORK }}/linux-x64/publish/**/*
 
-      - name: Publish Linux x64 Build Artifact
+      - name: Publish Linux Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build_linux_x64
-          path: _artifacts/linux-x64/${{ env.FRAMEWORK }}/**/*
-
-      - name: Build Backend + Frontend + Packages (linux-musl-x64)
-        shell: bash
-        run: ./build.sh --backend --frontend --packages -f ${{ env.FRAMEWORK }} -r linux-musl-x64
-
-      - name: Build Backend + Frontend + Packages (linux-musl-arm64)
-        shell: bash
-        run: ./build.sh --backend --frontend --packages -f ${{ env.FRAMEWORK }} -r linux-musl-arm64
-
-      - name: Publish Linux Musl x64 Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: build_linux_musl_x64
-          path: _artifacts/linux-musl-x64/${{ env.FRAMEWORK }}/**/*
-
-      - name: Publish Linux Musl arm64 Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: build_linux_musl_arm64
-          path: _artifacts/linux-musl-arm64/${{ env.FRAMEWORK }}/**/*
-
+          name: build_linux
+          path: _artifacts/linux-*/**/*
+          
   unit_test:
     needs: build
     runs-on: ubuntu-latest
@@ -218,18 +198,15 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: build_linux_x64
+          name: build_linux
           path: _output
 
       - name: Prepare Binary Directory
         shell: bash
         run: |
           mkdir -p ./bin
-          tree
-          ls -lha _output
-          ls -lha _tests
-          cp -r ./_output/_artifacts/linux-x64/${{ env.FRAMEWORK }}/Radarr/. ./bin/
-
+          cp -r ./_output/linux-x64/${{ env.FRAMEWORK }}/Radarr/. ./bin/
+          
       - name: Make Test Binaries Executable
         shell: bash
         run: |
@@ -293,14 +270,14 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: build_linux_x64
+          name: build_linux
           path: _output
 
       - name: Prepare Binary Directory
         shell: bash
         run: |
           mkdir -p ./bin
-          cp -r ./_output/_artifacts/linux-x64/${{ env.FRAMEWORK }}/Radarr/. ./bin/
+          cp -r ./_output/linux-x64/${{ env.FRAMEWORK }}/Radarr/. ./bin/
 
       - name: Make Test Binaries Executable
         shell: bash
@@ -344,14 +321,14 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: build_linux_x64
+          name: build_linux
           path: _output
 
       - name: Prepare Binary Directory
         shell: bash
         run: |
           mkdir -p ./bin
-          cp -r ./_output/_artifacts/linux-x64/${{ env.FRAMEWORK }}/Radarr/. ./bin/
+          cp -r ./_output/linux-x64/${{ env.FRAMEWORK }}/Radarr/. ./bin/
 
       - name: Make Test Binaries Executable
         shell: bash
@@ -382,7 +359,7 @@ jobs:
           path: TestResult.xml
 
   release:
-    if: ${{ github.event_name == 'push' && (github.ref_name == 'develop' || github.ref_name == 'master') }}
+#    if: ${{ github.event_name == 'push' && (github.ref_name == 'develop' || github.ref_name == 'master') }}
     needs:
       - build
       - unit_test
@@ -397,23 +374,17 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: build_linux_musl_x64
-          path: _artifacts/linux-musl-x64
-
-      - name: Download Build Artifact (arm64)
-        uses: actions/download-artifact@v4
-        with:
-          name: build_linux_musl_arm64
-          path: _artifacts/linux-musl-arm64
+          name: build_linux
+          path: _output
 
       - name: Create Release Package
         shell: bash
         run: |
           mkdir -p _artifacts
           tar -czf _artifacts/Radarr.${{ needs.build.outputs.branch }}.${{ needs.build.outputs.version }}.linux-musl-core-x64.tar.gz \\
-            -C _artifacts/linux-musl-x64/${{ env.FRAMEWORK }} Radarr
+            -C _output/linux-musl-x64/${{ env.FRAMEWORK }} Radarr
           tar -czf _artifacts/Radarr.${{ needs.build.outputs.branch }}.${{ needs.build.outputs.version }}.linux-musl-core-arm64.tar.gz \\
-            -C _artifacts/linux-musl-arm64/${{ env.FRAMEWORK }} Radarr
+            -C _output/linux-musl-arm64/${{ env.FRAMEWORK }} Radarr
 
       - name: Upload Release Artifact
         uses: actions/upload-artifact@v4
@@ -461,7 +432,7 @@ jobs:
           tag: v${{ needs.build.outputs.version }}
 
   docker:
-    if: ${{ github.event_name == 'push' && (github.ref_name == 'develop' || github.ref_name == 'master') }}
+#    if: ${{ github.event_name == 'push' && (github.ref_name == 'develop' || github.ref_name == 'master') }}
     needs:
       - release
       - build
