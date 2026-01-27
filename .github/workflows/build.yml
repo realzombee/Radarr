@@ -225,6 +225,9 @@ jobs:
         shell: bash
         run: |
           mkdir -p ./bin
+          tree
+          ls -lha _output
+          ls -lha _tests
           cp -r ./_output/_artifacts/linux-x64/${{ env.FRAMEWORK }}/Radarr/. ./bin/
 
       - name: Make Test Binaries Executable
