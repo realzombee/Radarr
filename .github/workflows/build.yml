@@ -78,7 +78,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build_linux_x64
-          path: _artifacts/linux-x64/${{ env.FRAMEWORK }}
+          path: _artifacts/linux-x64/${{ env.FRAMEWORK }}/**/*
 
       - name: Build Backend + Frontend + Packages (linux-musl-x64)
         shell: bash
@@ -92,13 +92,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build_linux_musl_x64
-          path: _artifacts/linux-musl-x64/${{ env.FRAMEWORK }}
+          path: _artifacts/linux-musl-x64/${{ env.FRAMEWORK }}/**/*
 
       - name: Publish Linux Musl arm64 Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: build_linux_musl_arm64
-          path: _artifacts/linux-musl-arm64/${{ env.FRAMEWORK }}
+          path: _artifacts/linux-musl-arm64/${{ env.FRAMEWORK }}/**/*
 
   unit_test:
     needs: build
