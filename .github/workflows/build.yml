@@ -376,6 +376,13 @@ jobs:
         with:
           name: build_linux
           path: _output
+          
+      - name: Make Binaries Executable
+        shell: bash
+        run: |
+          find . -name "ffprobe" -exec chmod a+x {} \;
+          find . -name "Radarr" -exec chmod a+x {} \;
+          find . -name "Radarr.Update" -exec chmod a+x {} \;
 
       - name: Create Release Package
         shell: bash
