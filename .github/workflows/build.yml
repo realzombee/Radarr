@@ -359,7 +359,7 @@ jobs:
           path: TestResult.xml
 
   release:
-#    if: ${{ github.event_name == 'push' && (github.ref_name == 'develop' || github.ref_name == 'master') }}
+    if: ${{ github.event_name == 'push' && (github.ref_name == 'develop' || github.ref_name == 'master') }}
     needs:
       - build
       - unit_test
@@ -437,7 +437,7 @@ jobs:
           tag: v${{ needs.build.outputs.version }}
 
   docker:
-#    if: ${{ github.event_name == 'push' && (github.ref_name == 'develop' || github.ref_name == 'master') }}
+    if: ${{ github.event_name == 'push' && (github.ref_name == 'develop' || github.ref_name == 'master') }}
     needs:
       - release
       - build
