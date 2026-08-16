@@ -87,7 +87,11 @@ namespace NzbDrone.Core.Messaging.Commands
                     commandModels.Add(commandModel);
                 }
 
-                _repo.InsertMany(commandModels);
+                if (commandModels.Any())
+                {
+                    _commandQueue.WaitForExclusiveCommandToComplete();
+                    _repo.InsertMany(commandModels);
+                }
 
                 foreach (var commandModel in commandModels)
                 {
@@ -132,6 +136,7 @@ namespace NzbDrone.Core.Messaging.Commands
 
                 _logger.Trace("Inserting new command: {0}", commandModel.Name);
 
+                _commandQueue.WaitForExclusiveCommandToComplete();
                 _repo.Insert(commandModel);
                 _commandQueue.Add(commandModel);
 
