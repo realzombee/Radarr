@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using NLog;
 using NzbDrone.Common.Instrumentation.Extensions;
 using NzbDrone.Common.TPL;
@@ -58,9 +57,6 @@ namespace NzbDrone.Core.ImportLists
 
             _logger.Debug("Available import lists {0}", importLists.Count);
 
-            var taskList = new List<Task>();
-            var taskFactory = new TaskFactory(TaskCreationOptions.LongRunning, TaskContinuationOptions.None);
-
             foreach (var importList in importLists)
             {
                 var importListLocal = importList;
@@ -89,45 +85,38 @@ namespace NzbDrone.Core.ImportLists
                     continue;
                 }
 
-                var task = taskFactory.StartNew(() =>
+                try
                 {
-                    try
-                    {
-                        var importListReports = importListLocal.Fetch();
+                    var importListReports = importListLocal.Fetch();
 
-                        lock (result)
+                    lock (result)
+                    {
+                        _logger.Debug("Found {0} from Import List {1} ({2})", importListReports.Movies.Count, importList.Name, importListLocal.Definition.Name);
+
+                        if (!importListReports.AnyFailure)
                         {
-                            _logger.Debug("Found {0} from Import List {1} ({2})", importListReports.Movies.Count, importList.Name, importListLocal.Definition.Name);
+                            var alreadyMapped = result.Movies.Where(x => importListReports.Movies.Any(r => r.TmdbId == x.TmdbId));
+                            var listMovies = MapMovieReports(importListReports.Movies.Where(x => result.Movies.All(r => r.TmdbId != x.TmdbId))).Where(x => x.TmdbId > 0).ToList();
 
-                            if (!importListReports.AnyFailure)
-                            {
-                                var alreadyMapped = result.Movies.Where(x => importListReports.Movies.Any(r => r.TmdbId == x.TmdbId));
-                                var listMovies = MapMovieReports(importListReports.Movies.Where(x => result.Movies.All(r => r.TmdbId != x.TmdbId))).Where(x => x.TmdbId > 0).ToList();
+                            listMovies.AddRange(alreadyMapped);
+                            listMovies = listMovies.DistinctBy(x => x.TmdbId).ToList();
+                            listMovies.ForEach(m => m.ListId = importList.Definition.Id);
 
-                                listMovies.AddRange(alreadyMapped);
-                                listMovies = listMovies.DistinctBy(x => x.TmdbId).ToList();
-                                listMovies.ForEach(m => m.ListId = importList.Definition.Id);
-
-                                result.Movies.AddRange(listMovies);
-                                _listMovieService.SyncMoviesForList(listMovies, importList.Definition.Id);
-                            }
-
-                            result.AnyFailure |= importListReports.AnyFailure;
-                            result.SyncedLists++;
-
-                            _importListStatusService.UpdateListSyncStatus(importList.Definition.Id);
+                            result.Movies.AddRange(listMovies);
+                            _listMovieService.SyncMoviesForList(listMovies, importList.Definition.Id);
                         }
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.Error(e, "Error during Import List Sync of {0} ({1})", importList.Name, importListLocal.Definition.Name);
-                    }
-                }).LogExceptions();
 
-                taskList.Add(task);
+                        result.AnyFailure |= importListReports.AnyFailure;
+                        result.SyncedLists++;
+
+                        _importListStatusService.UpdateListSyncStatus(importList.Definition.Id);
+                    }
+                }
+                catch (Exception e)
+                {
+                    _logger.Error(e, "Error during Import List Sync of {0} ({1})", importList.Name, importListLocal.Definition.Name);
+                }
             }
-
-            Task.WaitAll(taskList.ToArray());
 
             result.Movies = result.Movies.DistinctBy(r => new { r.TmdbId, r.ImdbId, r.Title }).ToList();
 

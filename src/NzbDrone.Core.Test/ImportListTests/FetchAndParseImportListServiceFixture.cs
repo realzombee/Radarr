@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using FizzWare.NBuilder;
 using FluentAssertions;
 using Moq;
@@ -184,6 +186,45 @@ namespace NzbDrone.Core.Test.ImportListTests
             var listResult = Subject.Fetch();
             listResult.AnyFailure.Should().BeFalse();
             listResult.Movies.Count.Should().Be(5);
+        }
+
+        [Test]
+        public void should_not_start_the_next_list_until_the_current_list_finishes()
+        {
+            using var firstListStarted = new ManualResetEventSlim();
+            using var releaseFirstList = new ManualResetEventSlim();
+            using var secondListStarted = new ManualResetEventSlim();
+
+            var first = CreateListResult(1, true, true, new ImportListFetchResult());
+            var second = CreateListResult(2, true, true, new ImportListFetchResult());
+
+            first.Setup(x => x.Fetch()).Returns(() =>
+            {
+                firstListStarted.Set();
+                releaseFirstList.Wait();
+                return new ImportListFetchResult();
+            });
+
+            second.Setup(x => x.Fetch()).Returns(() =>
+            {
+                secondListStarted.Set();
+                return new ImportListFetchResult();
+            });
+
+            var fetch = Task.Run(() => Subject.Fetch());
+
+            try
+            {
+                firstListStarted.Wait(TimeSpan.FromSeconds(1)).Should().BeTrue();
+                secondListStarted.Wait(TimeSpan.FromSeconds(1)).Should().BeFalse();
+            }
+            finally
+            {
+                releaseFirstList.Set();
+            }
+
+            fetch.Wait(TimeSpan.FromSeconds(1)).Should().BeTrue();
+            second.Verify(x => x.Fetch(), Times.Once());
         }
     }
 }
