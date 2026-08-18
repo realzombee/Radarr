@@ -45,12 +45,43 @@ namespace NzbDrone.Core.ImportLists.ImportListMovies
         public List<ImportListMovie> SyncMoviesForList(List<ImportListMovie> listMovies, int listId)
         {
             var existingListMovies = GetAllForLists(new List<int> { listId });
+            var existingByTmdbId = existingListMovies.ToDictionary(x => x.TmdbId);
+            var listMoviesToInsert = new List<ImportListMovie>();
+            var listMoviesToUpdate = new List<ImportListMovie>();
 
-            listMovies.ForEach(l => l.Id = existingListMovies.FirstOrDefault(e => e.TmdbId == l.TmdbId)?.Id ?? 0);
+            foreach (var listMovie in listMovies)
+            {
+                if (existingByTmdbId.TryGetValue(listMovie.TmdbId, out var existingListMovie))
+                {
+                    listMovie.Id = existingListMovie.Id;
 
-            _importListMovieRepository.InsertMany(listMovies.Where(l => l.Id == 0).ToList());
-            _importListMovieRepository.UpdateMany(listMovies.Where(l => l.Id > 0).ToList());
-            _importListMovieRepository.DeleteMany(existingListMovies.Where(l => listMovies.All(x => x.TmdbId != l.TmdbId)).ToList());
+                    if (listMovie.MovieMetadataId != existingListMovie.MovieMetadataId)
+                    {
+                        listMoviesToUpdate.Add(listMovie);
+                    }
+                }
+                else
+                {
+                    listMoviesToInsert.Add(listMovie);
+                }
+            }
+
+            var listMoviesToDelete = existingListMovies.Where(l => listMovies.All(x => x.TmdbId != l.TmdbId)).ToList();
+
+            if (listMoviesToInsert.Any())
+            {
+                _importListMovieRepository.InsertMany(listMoviesToInsert);
+            }
+
+            if (listMoviesToUpdate.Any())
+            {
+                _importListMovieRepository.UpdateMany(listMoviesToUpdate);
+            }
+
+            if (listMoviesToDelete.Any())
+            {
+                _importListMovieRepository.DeleteMany(listMoviesToDelete);
+            }
 
             return listMovies;
         }
