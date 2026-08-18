@@ -15,7 +15,7 @@ namespace NzbDrone.Core.Test.Datastore
             var connection = Mocker.Resolve<IConnectionStringFactory>().MainDbConnection.ConnectionString;
             var builder = new SQLiteConnectionStringBuilder(connection);
 
-            builder.BusyTimeout.Should().Be(1000);
+            builder.BusyTimeout.Should().Be(5000);
         }
     }
 }
