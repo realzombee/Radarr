@@ -29,7 +29,7 @@ public void should_configure_sqlite_busy_timeout_for_one_second()
 }
 ```
 
-Create the fixture as `CoreTest`, import `System.Data.SQLite`, `FluentAssertions`, `NUnit.Framework`, `NzbDrone.Core.Datastore`, and `NzbDrone.Core.Test.Framework`.
+Create the fixture as `DbTest`, which provisions the real `IConnectionStringFactory` and SQLite configuration. Import `System.Data.SQLite`, `FluentAssertions`, `NUnit.Framework`, `NzbDrone.Core.Datastore`, and `NzbDrone.Core.Test.Framework`.
 
 - [ ] **Step 2: Run the test to verify it fails**
 
