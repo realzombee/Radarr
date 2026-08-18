@@ -29,8 +29,8 @@ namespace NzbDrone.Core.Test.Messaging.Commands
         {
             var commandModel = Builder<CommandModel>
                 .CreateNew()
-                .With(c => c.Name = "ImportListSync")
-                .With(c => c.Body = new ImportListSyncCommand())
+                .With(c => c.Name = "TypeExclusive")
+                .With(c => c.Body = new TypeExclusiveCommand())
                 .With(c => c.Status = CommandStatus.Started)
                 .Build();
 
@@ -47,6 +47,11 @@ namespace NzbDrone.Core.Test.Messaging.Commands
                 .Build();
 
             Subject.Add(commandModel);
+        }
+
+        private class TypeExclusiveCommand : Command
+        {
+            public override bool IsTypeExclusive => true;
         }
 
         [Test]
@@ -75,8 +80,8 @@ namespace NzbDrone.Core.Test.Messaging.Commands
 
             var newCommandModel = Builder<CommandModel>
                 .CreateNew()
-                .With(c => c.Name = "ImportListSync")
-                .With(c => c.Body = new ImportListSyncCommand())
+                .With(c => c.Name = "TypeExclusive")
+                .With(c => c.Body = new TypeExclusiveCommand())
                 .Build();
 
             Subject.Add(newCommandModel);
@@ -93,8 +98,8 @@ namespace NzbDrone.Core.Test.Messaging.Commands
 
             var newCommandModel = Builder<CommandModel>
                 .CreateNew()
-                .With(c => c.Name = "ImportListSync")
-                .With(c => c.Body = new ImportListSyncCommand())
+                .With(c => c.Name = "TypeExclusive")
+                .With(c => c.Body = new TypeExclusiveCommand())
                 .Build();
 
             Subject.Add(newCommandModel);
@@ -105,7 +110,7 @@ namespace NzbDrone.Core.Test.Messaging.Commands
         }
 
         [Test]
-        public void should_return_type_exclusive_command_if_another_not_running()
+        public void should_not_return_import_list_sync_command_if_another_command_is_running()
         {
             GivenStartedDiskCommand();
 
@@ -119,8 +124,7 @@ namespace NzbDrone.Core.Test.Messaging.Commands
 
             Subject.TryGet(out var command);
 
-            command.Should().NotBeNull();
-            command.Status.Should().Be(CommandStatus.Started);
+            command.Should().BeNull();
         }
 
         [Test]

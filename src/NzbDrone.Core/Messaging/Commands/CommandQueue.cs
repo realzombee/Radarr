@@ -146,6 +146,17 @@ namespace NzbDrone.Core.Messaging.Commands
             }
         }
 
+        public void WaitForExclusiveCommandToComplete()
+        {
+            lock (_mutex)
+            {
+                while (_items.Any(c => c.Status == CommandStatus.Started && c.Body.IsExclusive))
+                {
+                    Monitor.Wait(_mutex);
+                }
+            }
+        }
+
         public bool TryGet(out CommandModel item)
         {
             var rval = true;

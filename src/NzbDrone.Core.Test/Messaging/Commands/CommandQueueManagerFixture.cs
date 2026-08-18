@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using NUnit.Framework;
@@ -55,6 +57,68 @@ namespace NzbDrone.Core.Test.Messaging.Commands
 
             Mocker.GetMock<ICommandRepository>()
                   .Verify(v => v.Get(It.IsAny<int>()), Times.Never());
+        }
+
+        [Test]
+        public void should_wait_to_persist_a_command_until_an_exclusive_command_completes()
+        {
+            var exclusive = Subject.Push(new ExclusiveCommand());
+            using var consumer = Subject.Queue(CancellationToken.None).GetEnumerator();
+            consumer.MoveNext().Should().BeTrue();
+
+            using var started = new ManualResetEventSlim();
+            var pendingPush = Task.Run(() =>
+            {
+                started.Set();
+                return Subject.Push(new RefreshMonitoredDownloadsCommand());
+            });
+
+            try
+            {
+                started.Wait(TimeSpan.FromSeconds(1)).Should().BeTrue();
+                pendingPush.Wait(TimeSpan.FromMilliseconds(100)).Should().BeFalse();
+            }
+            finally
+            {
+                Subject.Complete(exclusive, "Done");
+            }
+
+            pendingPush.Wait(TimeSpan.FromSeconds(1)).Should().BeTrue();
+        }
+
+        [Test]
+        public void should_wait_to_persist_many_commands_until_an_exclusive_command_completes()
+        {
+            var exclusive = Subject.Push(new ExclusiveCommand());
+            using var consumer = Subject.Queue(CancellationToken.None).GetEnumerator();
+            consumer.MoveNext().Should().BeTrue();
+
+            using var started = new ManualResetEventSlim();
+            var pendingPush = Task.Run(() =>
+            {
+                started.Set();
+                return Subject.PushMany(new List<RefreshMonitoredDownloadsCommand>
+                {
+                    new RefreshMonitoredDownloadsCommand()
+                });
+            });
+
+            try
+            {
+                started.Wait(TimeSpan.FromSeconds(1)).Should().BeTrue();
+                pendingPush.Wait(TimeSpan.FromMilliseconds(100)).Should().BeFalse();
+            }
+            finally
+            {
+                Subject.Complete(exclusive, "Done");
+            }
+
+            pendingPush.Wait(TimeSpan.FromSeconds(1)).Should().BeTrue();
+        }
+
+        private class ExclusiveCommand : Command
+        {
+            public override bool IsExclusive => true;
         }
     }
 }
