@@ -195,7 +195,7 @@ namespace NzbDrone.Core.Test.ImportList
                   .Verify(v => v.DeleteMovie(It.IsAny<int>(), It.IsAny<bool>(), It.IsAny<bool>()), Times.Never());
 
             Mocker.GetMock<IMovieService>()
-                  .Verify(v => v.UpdateMovie(new List<Movie>(), true), Times.Once());
+                  .Verify(v => v.UpdateMovie(It.IsAny<List<Movie>>(), true), Times.Never());
         }
 
         [Test]
@@ -204,6 +204,8 @@ namespace NzbDrone.Core.Test.ImportList
             _importListFetch.Movies.ForEach(m => m.ListId = 1);
             GivenList(1, true);
             GivenCleanLevel("keepAndUnmonitor");
+
+            _existingMovies.ForEach(m => m.Monitored = true);
 
             Mocker.GetMock<IMovieService>()
                   .Setup(v => v.GetAllMovies())
@@ -226,6 +228,29 @@ namespace NzbDrone.Core.Test.ImportList
         }
 
         [Test]
+        public void should_not_update_already_unmonitored_movies_when_cleaning_library()
+        {
+            _importListFetch.Movies.ForEach(m => m.ListId = 1);
+            GivenList(1, true);
+            GivenCleanLevel("keepAndUnmonitor");
+
+            _existingMovies.ForEach(m => m.Monitored = false);
+
+            Mocker.GetMock<IMovieService>()
+                  .Setup(v => v.GetAllMovies())
+                  .Returns(_existingMovies);
+
+            Mocker.GetMock<IImportListMovieService>()
+                  .Setup(v => v.GetAllListMovies())
+                  .Returns(_list1Movies);
+
+            Subject.Execute(_commandAll);
+
+            Mocker.GetMock<IMovieService>()
+                  .Verify(v => v.UpdateMovie(It.IsAny<List<Movie>>(), true), Times.Never());
+        }
+
+        [Test]
         public void should_not_clean_on_clean_library_if_tmdb_match()
         {
             _importListFetch.Movies.ForEach(m => m.ListId = 1);
@@ -233,6 +258,8 @@ namespace NzbDrone.Core.Test.ImportList
 
             GivenList(1, true);
             GivenCleanLevel("keepAndUnmonitor");
+
+            _existingMovies.ForEach(m => m.Monitored = true);
 
             Mocker.GetMock<IMovieService>()
                   .Setup(v => v.GetAllMovies())
@@ -257,6 +284,8 @@ namespace NzbDrone.Core.Test.ImportList
 
             GivenList(1, true);
             GivenCleanLevel("keepAndUnmonitor");
+
+            _existingMovies.ForEach(m => m.Monitored = true);
 
             Mocker.GetMock<IMovieService>()
                   .Setup(v => v.GetAllMovies())
@@ -299,7 +328,7 @@ namespace NzbDrone.Core.Test.ImportList
                   .Verify(v => v.DeleteMovie(It.IsAny<int>(), true, It.IsAny<bool>()), Times.Never());
 
             Mocker.GetMock<IMovieService>()
-                  .Verify(v => v.UpdateMovie(new List<Movie>(), true), Times.Once());
+                  .Verify(v => v.UpdateMovie(It.IsAny<List<Movie>>(), true), Times.Never());
         }
 
         [Test]
@@ -329,7 +358,7 @@ namespace NzbDrone.Core.Test.ImportList
                   .Verify(v => v.DeleteMovie(It.IsAny<int>(), true, It.IsAny<bool>()), Times.Exactly(3));
 
             Mocker.GetMock<IMovieService>()
-                  .Verify(v => v.UpdateMovie(new List<Movie>(), true), Times.Once());
+                  .Verify(v => v.UpdateMovie(It.IsAny<List<Movie>>(), true), Times.Never());
         }
 
         [Test]
