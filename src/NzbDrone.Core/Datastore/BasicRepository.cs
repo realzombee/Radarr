@@ -165,10 +165,13 @@ namespace NzbDrone.Core.Datastore
                 throw new InvalidOperationException("Can't insert model with existing ID " + model.Id);
             }
 
-            using (var conn = _database.OpenConnection())
+            model = SqliteWriteCoordinator.Execute(_database, () =>
             {
-                model = Insert(conn, null, model);
-            }
+                using (var conn = _database.OpenConnection())
+                {
+                    return Insert(conn, null, model);
+                }
+            });
 
             ModelCreated(model);
 
@@ -227,18 +230,21 @@ namespace NzbDrone.Core.Datastore
                 throw new InvalidOperationException("Can't insert model with existing ID != 0");
             }
 
-            using (var conn = _database.OpenConnection())
+            SqliteWriteCoordinator.Execute(_database, () =>
             {
-                using (var tran = conn.BeginTransaction(IsolationLevel.ReadCommitted))
+                using (var conn = _database.OpenConnection())
                 {
-                    foreach (var model in models)
+                    using (var tran = conn.BeginTransaction(IsolationLevel.ReadCommitted))
                     {
-                        Insert(conn, tran, model);
-                    }
+                        foreach (var model in models)
+                        {
+                            Insert(conn, tran, model);
+                        }
 
-                    tran.Commit();
+                        tran.Commit();
+                    }
                 }
-            }
+            });
         }
 
         public TModel Update(TModel model)
@@ -248,10 +254,13 @@ namespace NzbDrone.Core.Datastore
                 throw new InvalidOperationException("Can't update model with ID 0");
             }
 
-            using (var conn = _database.OpenConnection())
+            SqliteWriteCoordinator.Execute(_database, () =>
             {
-                UpdateFields(conn, null, model, _properties);
-            }
+                using (var conn = _database.OpenConnection())
+                {
+                    UpdateFields(conn, null, model, _properties);
+                }
+            });
 
             ModelUpdated(model);
 
@@ -265,10 +274,13 @@ namespace NzbDrone.Core.Datastore
                 throw new InvalidOperationException("Can't update model with ID 0");
             }
 
-            using (var conn = _database.OpenConnection())
+            SqliteWriteCoordinator.Execute(_database, () =>
             {
-                UpdateFields(conn, null, models, _properties);
-            }
+                using (var conn = _database.OpenConnection())
+                {
+                    UpdateFields(conn, null, models, _properties);
+                }
+            });
         }
 
         protected void Delete(Expression<Func<TModel, bool>> where)
@@ -280,10 +292,13 @@ namespace NzbDrone.Core.Datastore
         {
             var sql = builder.AddDeleteTemplate(typeof(TModel));
 
-            using (var conn = _database.OpenConnection())
+            SqliteWriteCoordinator.Execute(_database, () =>
             {
-                conn.Execute(sql.RawSql, sql.Parameters);
-            }
+                using (var conn = _database.OpenConnection())
+                {
+                    conn.Execute(sql.RawSql, sql.Parameters);
+                }
+            });
         }
 
         public void Delete(TModel model)
@@ -323,15 +338,18 @@ namespace NzbDrone.Core.Datastore
 
         public void Purge(bool vacuum = false)
         {
-            using (var conn = _database.OpenConnection())
+            SqliteWriteCoordinator.Execute(_database, () =>
             {
-                conn.Execute($"DELETE FROM \"{_table}\"");
-            }
+                using (var conn = _database.OpenConnection())
+                {
+                    conn.Execute($"DELETE FROM \"{_table}\"");
+                }
 
-            if (vacuum)
-            {
-                Vacuum();
-            }
+                if (vacuum)
+                {
+                    Vacuum();
+                }
+            });
         }
 
         protected void Vacuum()
@@ -353,10 +371,13 @@ namespace NzbDrone.Core.Datastore
 
             var propertiesToUpdate = properties.Select(x => x.GetMemberName()).ToList();
 
-            using (var conn = _database.OpenConnection())
+            SqliteWriteCoordinator.Execute(_database, () =>
             {
-                UpdateFields(conn, null, model, propertiesToUpdate);
-            }
+                using (var conn = _database.OpenConnection())
+                {
+                    UpdateFields(conn, null, model, propertiesToUpdate);
+                }
+            });
 
             ModelUpdated(model);
         }
@@ -370,10 +391,13 @@ namespace NzbDrone.Core.Datastore
 
             var propertiesToUpdate = properties.Select(x => x.GetMemberName()).ToList();
 
-            using (var conn = _database.OpenConnection())
+            SqliteWriteCoordinator.Execute(_database, () =>
             {
-                UpdateFields(conn, null, models, propertiesToUpdate);
-            }
+                using (var conn = _database.OpenConnection())
+                {
+                    UpdateFields(conn, null, models, propertiesToUpdate);
+                }
+            });
 
             foreach (var model in models)
             {

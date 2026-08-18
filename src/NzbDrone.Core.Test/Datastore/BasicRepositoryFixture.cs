@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using FizzWare.NBuilder;
 using FluentAssertions;
 using NUnit.Framework;
@@ -296,6 +298,33 @@ namespace NzbDrone.Core.Test.Datastore
         public void should_be_able_to_call_ToList_on_empty_queryable()
         {
             Subject.All().ToList().Should().BeEmpty();
+        }
+
+        [Test]
+        public void should_serialize_sqlite_writes_for_the_same_database()
+        {
+            using var firstEntered = new ManualResetEventSlim();
+            using var releaseFirst = new ManualResetEventSlim();
+            using var secondEntered = new ManualResetEventSlim();
+
+            var database = Mocker.Resolve<IMainDatabase>();
+
+            var first = Task.Run(() => SqliteWriteCoordinator.Execute(database, () =>
+            {
+                firstEntered.Set();
+                releaseFirst.Wait();
+            }));
+
+            firstEntered.Wait();
+
+            var second = Task.Run(() => SqliteWriteCoordinator.Execute(database, secondEntered.Set));
+
+            secondEntered.Wait(TimeSpan.FromMilliseconds(100)).Should().BeFalse();
+
+            releaseFirst.Set();
+            Task.WaitAll(first, second);
+
+            secondEntered.IsSet.Should().BeTrue();
         }
 
         [TestCase(1, 2)]
